@@ -1,0 +1,204 @@
+/*
+
+  Autor: Marcela Padilla 21939
+
+
+ */
+#include <SPI.h>
+#include <SD.h>
+
+File root;
+File myFile;
+int menu;
+
+
+void setup()
+{
+
+  Serial.begin(115200);
+  SPI.setModule(0);
+
+  Serial.print("Initializing SD card...");
+
+  pinMode(PA_3, OUTPUT);
+
+  if (!SD.begin(PA_3)) {
+    Serial.println("initialization failed!");//fracaso
+    return;
+  }
+  Serial.println("initialization done.");//termina
+
+  root = SD.open("/");//abre el sd
+
+  printDirectory(root,0);
+
+  Serial.println("done!");//confirma
+  imp_menu();
+} 
+
+ 
+void loop()
+{
+  if(Serial.available()> 0){
+    menu = Serial.read();
+    if(menu == '1'){//al presionar 1
+      imp_CA();
+    }
+    else if(menu == '2'){//al presionar 2
+      imp_FL();
+    }
+    else if(menu == '3'){//al presionar 3
+      imp_CR();
+    }
+    else if (menu == '4') //al presionar 6
+    {
+      crear_dibujo();
+    }
+    else if(menu == '0'){//al presionae 0
+      myFile = SD.open("/");
+      printDirectory(myFile,0);
+      imp_menu();  
+    }
+    else {
+      Serial.println("Ingreso no es valido, intente de nuevo");//al presionar cualquier tecla
+      //Serial.write(menu);
+    }
+  }
+  
+}
+
+//Funcion para imprimir mis datos en la SD
+void printDirectory(File dir, int numTabs){
+  while(true){
+
+    File entry = dir.openNextFile();
+    if (!entry){
+      //no more files
+      break;
+    }
+    for (uint8_t i=0; i<numTabs; i++){
+      Serial.print('\t'); 
+    }
+    Serial.print(entry.name());
+    if (entry.isDirectory()){
+      Serial.println("/");
+      printDirectory(entry, numTabs+1);
+    } else {
+      //files have sizes, directories do not
+      Serial.print("\t\t");
+      Serial.println(entry.size(), DEC);
+    }
+    entry.close();
+  }
+}
+//************************************************************************
+void imp_CA(){
+  myFile = SD.open("flash.txt");//archivo.txt del caballo
+  if(myFile){
+    Serial.println("FLASH.TXT: ");//sale en la terminal
+
+    while (myFile.available()){
+      Serial.write(myFile.read());
+    }
+    //cerrar archivo
+    myFile.close();
+  } else{
+    Serial.println("Error para abirir FLASH.TXT");//por si no se logra abrir
+  }
+  imp_menu();
+}
+//***************************************************************************
+void imp_FL(){
+  myFile = SD.open("perro.txt");//archivo.txt de la flor
+  if(myFile){
+    Serial.println("PERRO.TXT: ");//sale en la terminal
+
+    while (myFile.available()){
+      Serial.write(myFile.read());
+    }
+    //cerrar archivo
+    myFile.close();
+  } else{
+    Serial.println("Error para abirir PERRO.TXT");//por si no se logra abrir
+  }
+  imp_menu();
+}
+//****************************************************************************
+void imp_CR(){
+  myFile = SD.open("robot.txt");//archivo.txt del carro
+  if(myFile){
+    Serial.println("ROBOT.TXT: ");//sale en la terminal
+
+    while (myFile.available()){
+      Serial.write(myFile.read());
+    }
+    //cerrar archivo
+    myFile.close();
+  } else{
+    Serial.println("Error para abirir ROBOT.TXT");//por si no se logra abrir
+  }
+  imp_menu();
+}
+//el menu que aparece en la terminal
+void imp_menu(){
+  Serial.println("");
+  Serial.println("Selecciona una opción");
+  Serial.println("Presione 0 para mostrar los archivos de la SD");
+  Serial.println("Presione 1 para primer imagen (flash)");
+  Serial.println("Presione 2 para segunda imagen (perro)");
+  Serial.println("Presione 3 para tercera imagen (robot)");
+  Serial.println("Presione 4 para crear una nueva imagen dibujando y guardar en la SD"); 
+  Serial.println("");  
+}
+
+
+//ayuda al ususario crear su propio dibujo
+void crear_dibujo()
+{
+  Serial.println("Dibuje un círculo en la terminal utilizando caracteres.");
+  Serial.println("Utilice 'l' para dibujar y '.' para terminar y guardar.");
+
+  String dibujo = "";  // Variable para almacenar el dibujo
+
+  while (true)
+  {
+    if (Serial.available() > 0)
+    {
+      char c = Serial.read();
+
+      // Si el usuario envía '!', terminamos de dibujar y guardamos en el archivo
+      if (c == '.')
+      {
+        Serial.println("Guardando el dibujo...");
+
+        // Guardar el dibujo en un archivo
+        myFile = SD.open("NUEVO.txt", FILE_WRITE);
+
+        if (myFile)
+        {
+          myFile.print(dibujo);
+          myFile.close();
+          Serial.println("Dibujo guardado correctamente como dibujo.txt");
+        }
+        else
+        {
+          Serial.println("Error al guardar el dibujo.");
+        }
+
+        imp_menu();
+        break;
+      }
+
+      // Si el usuario envía 'l', 
+      if (c == 'l')
+      {
+        dibujo += '*';  
+        Serial.print('*');
+      }
+      else
+      {
+        Serial.print(c);
+      }
+    }
+  }
+}
